@@ -1,4 +1,4 @@
-function [clean_eeg] = wavelet_ica(input_eeg, num_components, fs)
+function [clean_eeg] = wavelet_ica(input_eeg, num_components, fs, cutoff)
 % WAVELET_ICA(input_eeg, num_components, fs) Performs 
 % ICA-Wavelet decomposition on the input data. Determines components to remove 
 % based on the average frequency of each wavelet-decomposed component.
@@ -7,6 +7,8 @@ function [clean_eeg] = wavelet_ica(input_eeg, num_components, fs)
 %    input_eeg: EEG data [matrix]
 %    num_components: number of wavelet-decomposed components to make [number]
 %    fs: sampling rate for the EEG data [scalar]
+%    cutoff: low- and high-frequency cutoffs for wavelet component removal
+%    [vector]
 %
 %    OUTPUTS
 %    clean: ICA-Wavelet processed data [matrix]
@@ -27,7 +29,7 @@ function [clean_eeg] = wavelet_ica(input_eeg, num_components, fs)
     zero_crossings = double(zcd(post_wavelet.'));
     release(zcd);
     avg_freq = zero_crossings/time*0.5;
-    flagged_inds = avg_freq < 4 | avg_freq > 60;
+    flagged_inds = avg_freq < cutoff(1) | avg_freq > cutoff(2);     % 0 or 1
     
     % plot components with potential removals highlighted
     figure('Name', 'Components to Remove')
@@ -35,11 +37,11 @@ function [clean_eeg] = wavelet_ica(input_eeg, num_components, fs)
     title('Flagged Components in Red')
     
     % zero any flagged or user-specified components
-    templist = 1:size(flagged_inds, 2);
-    flags = flagged_inds.*templist;
-    flags = flags(flags ~= 0);
-    disp(['The automatically selected components to delete are: ', num2str(flags)])
-    prompt = '\nAny additional components to remove? ';
+    component_list = 1:size(flagged_inds, 2);
+    flags = flagged_inds.*component_list;
+    flags = flags(flags ~= 0);                                      % component numbers
+    disp(['The selected components to delete are: ', num2str(flags)])
+    prompt = '\nInput a vector of additional components to remove: ';
     flags = [flags input(prompt)];
     clean_components = zero_artifacts(post_wavelet, flags);
     
