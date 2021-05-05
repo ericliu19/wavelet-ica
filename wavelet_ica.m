@@ -36,13 +36,47 @@ function [clean_eeg] = wavelet_ica(input_eeg, num_components, fs, cutoff)
     highlight_eeg(post_wavelet, fs, flagged_inds, spacing_factor(post_wavelet));
     title('Flagged Components in Red')
     
-    % zero any flagged or user-specified components
+    % automatic flags
     component_list = 1:size(flagged_inds, 2);
     flags = flagged_inds.*component_list;
-    flags = flags(flags ~= 0);                                      % component numbers
-    disp(['The selected components to delete are: ', num2str(flags)])
-    prompt = '\nInput a vector of additional components to remove: ';
-    flags = [flags input(prompt)];
+    flags = flags(flags ~= 0);                        % component numbers
+    
+    % get user-specified flags
+    input_1 = NaN;
+    input_2 = NaN;
+    input_3 = NaN;
+    check_input = [isempty(input_1) isempty(input_2) isempty(input_3)];
+    
+    while (sum(check_input) < 2)
+        dlg_prompts = {['Enter text in\bf one\rm of the following boxes.' newline...
+            'Entries should be space-separated numbers.' sprintf('\n\n')...
+            'Remove all suggested components\bf except:\rm'],...
+            'Remove all suggested components\bf and:\rm', ...
+            'Remove\bf only\rm these components:'};
+        dlg_title = 'Components to Remove';
+        dlg_dims = [1 70];
+        dlg_defaults = {'','',''};
+        opts.Interpreter = 'tex';
+        opts.Resize = 'on';
+        opts.WindowStyle = 'normal';
+        user_input = inputdlg(dlg_prompts, dlg_title, dlg_dims, dlg_defaults, opts);
+        input_1 = str2num(user_input{1});
+        input_2 = str2num(user_input{2});
+        input_3 = str2num(user_input{3});
+        check_input = [isempty(input_1) isempty(input_2) isempty(input_3)];
+    end
+    
+    % update flags to reflect user input
+    if ~isempty(input_1)
+        for i = 1:length(input_1)
+            flags(flags == input_1(i)) = [];
+        end
+    elseif ~isempty(input_2)
+        flags = [flags input_2];
+    elseif ~isempty(input_3)
+        flags = input_3;
+    end
+
     clean_components = zero_artifacts(post_wavelet, flags);
     
     % reconstruct cleaned signal
@@ -59,8 +93,10 @@ function [clean_eeg] = wavelet_ica(input_eeg, num_components, fs, cutoff)
     plot_eeg(input_eeg, fs, spacing_factor(input_eeg))
     title('Original')
     subplot(2, 1, 2)
-    plot_eeg(clean_eeg, fs, spacing_factor(input_eeg))      % same spacing factor as above to show differences
+    plot_eeg(clean_eeg, fs, spacing_factor(input_eeg))              % same spacing factor as above to show differences
     title('Clean')
+    
+    msgbox({'Artifact removal complete.';['Removed components ' num2str(sort(unique(flags))) '.']});
 
 end
 

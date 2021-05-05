@@ -17,14 +17,14 @@ function highlight_eeg(eeg, fs, highlight, spacing)
     ymarkers = NaN(1,numchannels);
     ymarkerlabels = NaN(1, numchannels);
     for i = 1:numchannels
-        toplot = (eeg(i,:)-mean(eeg(i,:)));
+        to_plot = eeg(i,:) - mean(eeg(i,:)) - offset;
         if highlight(i) ~= 0
-            plot(t, toplot - offset, 'r')
+            plot(t, to_plot, 'r')
         else
-            plot(t, toplot - offset, 'k')
+            plot(t, to_plot, 'k')
         end
         hold on
-        ymarkers(i) = mean(toplot - offset);    
+        ymarkers(i) = mean(to_plot);    
         ymarkerlabels(i) = i;
         offset = offset + spacing;
     end
@@ -35,5 +35,7 @@ function highlight_eeg(eeg, fs, highlight, spacing)
     yticklabels(ymarkerlabels)
     xlabel('Time (s)')
     ylabel('Channel Number')
+    ylim([min(eeg(numchannels,:) - (numchannels - 1)*spacing) max(eeg(1,:))])
+    
 end
 
